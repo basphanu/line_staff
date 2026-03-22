@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Sales Submission App v3</title>
+  <style>
+    :root {
+      --bg: #f6f1ea;
+      --card: rgba(255,255,255,.92);
+      --text: #1A3263;
+      --muted: #547792;
+      --line: #d8c7af;
+      --primary: #1A3263;
+      --primary-2: #547792;
+      --danger: #9f3a2b;
+      --danger-soft: #f9ebe6;
+      --shadow: 0 10px 30px rgba(26, 50, 99, 0.10);
+      --radius: 20px;
+      --gold: #FFC570;
+      --beige: #EFD2B0;
+      --sea: #547792;
+      --navy: #1A3263;
+      --success-soft: #edf3f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #FFC570 0%, #EFD2B0 36%, #f6f1ea 78%);
+      color: var(--text);
+    }
+    .app {
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 18px 14px 32px;
+    }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; }
+    .brand h1 { margin:0; font-size:20px; line-height:1.2; font-weight:800; letter-spacing:-0.02em; }
+    .brand p { margin:4px 0 0; font-size:12px; color:var(--muted); }
+    .date-pill {
+      padding: 10px 12px; border-radius:999px; background:rgba(255,255,255,.68);
+      border:1px solid rgba(26,50,99,.10); box-shadow:var(--shadow); font-size:12px; color:var(--navy); white-space:nowrap;
+    }
+    .tabs {
+      display:grid; grid-template-columns:1fr 1fr; background:rgba(239,210,176,.55); border:1px solid rgba(26,50,99,.08);
+      border-radius:18px; padding:6px; gap:6px; box-shadow:var(--shadow); margin-bottom:18px; position:sticky; top:10px; backdrop-filter:blur(12px); z-index:5;
+    }
+    .tab { border:0; border-radius:14px; padding:12px; font-size:14px; font-weight:700; color:var(--muted); background:transparent; }
+    .tab.active { background:linear-gradient(135deg, var(--navy), var(--sea)); color:#fff; box-shadow:0 10px 24px rgba(26,50,99,.24); }
+    .screen { display:none; flex-direction:column; gap:14px; }
+    .screen.active { display:flex; }
+    .card {
+      background:var(--card); border:1px solid rgba(255,255,255,.72); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; backdrop-filter:blur(10px);
+    }
+    .locked-card { background: linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,250,243,.98) 100%); }
+    .section-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .section-head h2 { margin:0 0 4px; font-size:17px; font-weight:800; }
+    .section-head p { margin:0; color:var(--muted); font-size:12px; line-height:1.45; }
+    .badge { padding:8px 10px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap; }
+    .badge.blue { background:#edf3f7; color:var(--navy); }
+    .badge.green { background:#edf3f7; color:var(--sea); }
+    .badge.orange { background:#fff3df; color:#a66a17; }
+    .badge.red { background:var(--danger-soft); color:var(--danger); }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .field { display:flex; flex-direction:column; gap:7px; }
+    .field label { font-size:12px; font-weight:700; color:var(--navy); }
+    .field input, .field select, .field textarea {
+      width:100%; border:1px solid var(--line); background:#fffdf9; color:var(--text); border-radius:14px; padding:13px 14px; font-size:15px; outline:none; box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
+    }
+    .field textarea { min-height:88px; resize:vertical; }
+    .field input[readonly] { background:#f3ece3; color:var(--sea); }
+    .helper { font-size:11px; color:var(--muted); line-height:1.45; margin-top:-2px; }
+    .actions, .inline-actions { display:grid; gap:10px; }
+    .inline-actions { grid-template-columns:1fr 1fr; }
+    .btn {
+      border:0; border-radius:16px; padding:14px 16px; font-size:15px; font-weight:800; letter-spacing:0.01em; cursor:pointer;
+    }
+    .btn.primary { background:linear-gradient(135deg, var(--navy), var(--sea)); color:#fff; box-shadow:0 12px 24px rgba(26,50,99,.24); }
+    .btn.secondary { background:#fffaf3; border:1px solid var(--line); color:var(--navy); }
+    .btn.soft-danger { background:var(--danger-soft); color:var(--danger); border:1px solid #e8c3b6; }
+    .btn.soft-success { background:#edf3f7; color:var(--navy); border:1px solid #c5d5e2; }
+    .btn.ghost { background:rgba(255,255,255,.65); color:var(--navy); border:1px dashed rgba(26,50,99,.18); }
+    .employee-summary, .collapsed-hint, .empty-state {
+      padding:16px; border-radius:18px; border:1px dashed #cdb798; background:#fffaf3; color:var(--muted); font-size:13px; line-height:1.6;
+    }
+    .employee-summary { display:none; border-style:solid; justify-content:space-between; gap:10px; align-items:flex-start; }
+    .employee-summary.show { display:flex; }
+    .employee-summary strong { display:block; font-size:14px; margin-bottom:3px; color:var(--navy); }
+    .customer-card, .team-person { border:1px solid var(--line); background:#fffdf9; border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:12px; }
+    .customer-top { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .customer-index { font-size:13px; font-weight:800; color:var(--navy); }
+    .toggle-box { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:16px; background:#fffaf3; border:1px dashed #cdb798; }
+    .toggle-box input { width:18px; height:18px; }
+    .insurance-box { border-radius:18px; padding:14px; background:linear-gradient(180deg, #fffaf3 0%, #f5ede2 100%); border:1px solid var(--line); }
+    .summary-review { display:grid; gap:10px; margin-top:12px; }
+    .summary-row {
+      padding:12px 14px; border-radius:14px; border:1px solid var(--line); background:#fffdf9; font-size:13px; color:var(--text);
+    }
+    .summary-row strong { display:block; margin-bottom:4px; font-size:13px; color:var(--navy); }
+    .preview {
+      background:linear-gradient(180deg, #547792 0%, #1A3263 100%); color:#f8fafc; border-radius:18px; padding:14px; font-size:13px; line-height:1.65; white-space:pre-wrap; max-height:420px; overflow:auto; position:relative;
+    }
+    .copy-badge {
+      position:absolute; top:12px; right:12px; border:0; border-radius:999px; padding:8px 12px; background:rgba(255,255,255,.16); color:#fff; font-size:11px; font-weight:800; letter-spacing:.01em; cursor:pointer; transition:transform .18s ease, background .22s ease, box-shadow .22s ease, opacity .22s ease; box-shadow:0 8px 16px rgba(8,15,35,.14); backdrop-filter:blur(8px);
+    }
+    .copy-badge:hover { background:rgba(255,255,255,.22); transform:translateY(-1px); }
+    .copy-badge:active { transform:scale(.96); }
+    .copy-badge.copied { background:linear-gradient(135deg, rgba(255,197,112,.92), rgba(84,119,146,.96)); color:#fff; box-shadow:0 12px 22px rgba(26,50,99,.26); animation:copiedPulse .48s ease; }
+    @keyframes copiedPulse { 0% { transform:scale(.92);} 50%{transform:scale(1.06);} 100%{transform:scale(1);} }
+    .mini-metrics { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-top:12px; }
+    .metric { background:#fffaf3; border-radius:16px; border:1px solid var(--line); padding:12px; }
+    .metric span { font-size:11px; color:var(--muted); display:block; margin-bottom:5px; }
+    .metric strong { font-size:18px; letter-spacing:-0.02em; }
+    .save-overlay {
+      position:fixed; inset:0; background:rgba(26,50,99,.34); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;
+    }
+    .save-overlay.show { display:flex; }
+    .save-modal {
+      width:100%; max-width:340px; border-radius:26px; background:rgba(255,255,255,.98); border:1px solid rgba(255,255,255,.85); box-shadow:0 24px 60px rgba(26,50,99,.22); padding:20px; text-align:center;
+    }
+    .save-modal h3 { margin:0 0 8px; font-size:18px; color:var(--navy); }
+    .save-modal p { margin:0 0 14px; font-size:13px; color:var(--muted); line-height:1.5; }
+    .progress-shell { width:100%; height:12px; border-radius:999px; background:#efe4d4; overflow:hidden; margin-bottom:10px; }
+    .progress-bar { height:100%; width:6%; border-radius:999px; background:linear-gradient(90deg, #FFC570 0%, #547792 55%, #1A3263 100%); transition:width .35s ease; }
+    .progress-value { font-size:24px; font-weight:800; color:var(--navy); margin-bottom:16px; }
+    .post-save-actions { display:grid; gap:10px; margin-top:10px; }
+    .notice-overlay { position:fixed; inset:0; background:rgba(26,50,99,.34); display:none; align-items:center; justify-content:center; padding:20px; z-index:60; }
+    .notice-overlay.show { display:flex; }
+    .notice-modal { width:100%; max-width:320px; border-radius:24px; background:rgba(255,255,255,.98); border:1px solid rgba(255,255,255,.85); box-shadow:0 24px 60px rgba(26,50,99,.22); padding:20px; text-align:center; }
+    .notice-modal h3 { margin:0 0 8px; font-size:18px; color:var(--navy); }
+    .notice-modal p { margin:0 0 14px; font-size:13px; color:var(--muted); line-height:1.5; }
+    .hidden { display:none !important; }
+    .error-text { color:var(--danger); font-size:12px; margin-top:8px; }
+    .success-text { color:var(--navy); font-size:12px; margin-top:8px; }
+    @media (max-width: 360px) {
+      .grid-2, .inline-actions, .mini-metrics { grid-template-columns:1fr; }
+      .date-pill { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <h1>ระบบส่งยอดขายบัตร</h1>
+        <p>มือถือเป็นหลัก • กรอกง่าย • บันทึกก่อนแล้วค่อยสร้างข้อความส่งไลน์</p>
+      </div>
+      <div class="date-pill" id="today-pill">-</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="individual" onclick="showTab('individual')">ส่งยอดรายบุคคล</button>
+      <button class="tab" data-tab="team" onclick="showTab('team')">สรุปยอดรายทีม</button>
+    </div>
+
+    <section class="screen active" id="screen-individual">
+      <div class="card locked-card">
+        <div class="section-head">
+          <div>
+            <h2>1) ตรวจสอบรหัสพนักงาน</h2>
+            <p>เริ่มต้นที่หน้านี้ก่อนทุกครั้ง หากยังไม่เช็กรหัส จะยังไม่แสดงส่วนกรอกยอดขายด้านล่าง</p>
+          </div>
+          <div class="badge blue">เริ่มต้น</div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>วันที่</label>
+            <input type="text" id="indDate" readonly />
+          </div>
+          <div class="field">
+            <label>รหัสพนักงาน</label>
+            <input type="text" id="employeeIdInput" placeholder="กรอกรหัสพนักงาน" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn primary" onclick="lookupEmployee()">ตรวจสอบข้อมูลวันนี้</button>
+        </div>
+        <div id="employeeLookupError" class="error-text hidden"></div>
+        <div id="employeeSummary" class="employee-summary"></div>
+      </div>
+
+      <div id="individualBeforeLookupHint" class="collapsed-hint">
+        ก่อนกดตรวจสอบรหัสพนักงาน ระบบจะแสดงเพียงส่วนนี้กับเมนูสรุปยอดรายทีมเท่านั้น เพื่อลดความรกของหน้าจอมือถือและกันกรอกข้อมูลผิดคน
+      </div>
+
+      <div id="individualFormCard" class="card hidden">
+        <div class="section-head">
+          <div>
+            <h2>2) กรอกผลงานรอบนี้</h2>
+            <p>เมื่อเช็กรหัสสำเร็จแล้ว ให้กรอกข้อมูลให้ครบในหน้านี้ก่อน แล้วกดประมวลผลเพื่อไปยังหน้ารีวิวข้อมูลในขั้นตอนถัดไป</p>
+          </div>
+          <div class="badge orange">ปลดล็อกแล้ว</div>
+        </div>
+
+        <div class="summary-row" style="background:#fffaf3; border-style:dashed; margin-bottom:12px;">
+          <strong>บันทึกล่าสุด</strong>
+          <span id="individualFormLastSavedText">ยังไม่เคยบันทึกวันนี้</span>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label>รอบเวลา</label>
+            <select id="roundTimeSelect"></select>
+            <div class="helper">ดึงค่าจาก Master Data และใช้ทีมนี้อ้างอิงสาขาอัตโนมัติ</div>
+          </div>
+          <div class="field">
+            <label>ทีมวันนี้</label>
+            <select id="teamTodaySelect"></select>
+          </div>
+        </div>
+
+        <div class="toggle-box" style="margin-top:12px; margin-bottom:12px;">
+          <input type="checkbox" id="noCustomerCheckbox" onchange="toggleNoCustomer()" />
+          <div>
+            <strong>ยังไม่มียอดลูกค้าสมัครบัตร</strong>
+            <span>หากเลือก ระบบจะซ่อนกล่องลูกค้า แต่ยังกรอกยอดประกันได้ตามปกติ</span>
+          </div>
+        </div>
+
+        <div id="customerCardsWrap"></div>
+
+        <div class="actions" style="margin-top:12px;">
+          <button class="btn secondary" onclick="addCustomerCard()">+ เพิ่มลูกค้าอีก 1 คน</button>
+        </div>
+
+        <div class="insurance-box" style="margin-top:14px;">
+          <div class="section-head" style="margin-bottom:10px;">
+            <div>
+              <h2 style="font-size:15px;">ยอดขายประกัน</h2>
+              <p>กรอกเพียง 1 ชุด ไม่ต้องแยกตามลูกค้า</p>
+            </div>
+            <div class="badge blue">ชุดเดียว</div>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label>จำนวนกรมธรรม์</label>
+              <input type="number" id="insurancePolicyCount" value="0" min="0" />
+            </div>
+            <div class="field">
+              <label>เบี้ยรวม (บาท)</label>
+              <input type="number" id="insurancePremium" value="0" min="0" />
+            </div>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:14px;">
+          <button class="btn primary" onclick="processIndividual()">ประมวลผล</button>
+        </div>
+        <div id="individualFormError" class="error-text hidden"></div>
+      </div>
+
+      <div id="individualReviewCard" class="card hidden">
+        <div class="section-head">
+          <div>
+            <h2>3) รีวิวข้อมูลก่อนดำเนินการ</h2>
+            <p>หน้านี้จะปรากฏหลังจากกดปุ่มประมวลผลจากหน้ากรอกยอดแล้วเท่านั้น และจะสรุปข้อมูลทั้งหมดให้ตรวจสอบก่อนบันทึกจริง</p>
+          </div>
+          <div class="badge green">หลังประมวลผล</div>
+        </div>
+        <div class="summary-row" style="background:#fffaf3; border-style:dashed;">
+          <strong>บันทึกล่าสุด</strong>
+          <span id="individualLastSavedText">ยังไม่เคยบันทึกวันนี้</span>
+        </div>
+        <div id="individualReviewSummary" class="summary-review"></div>
+        <div class="inline-actions" style="margin-top:12px;">
+          <button class="btn primary" onclick="saveIndividual()">บันทึกข้อมูล</button>
+          <button class="btn secondary" onclick="cancelIndividualReview()">ยกเลิก</button>
+        </div>
+      </div>
+
+      <div id="individualMessageCard" class="card hidden">
+        <div class="section-head">
+          <div>
+            <h2>4) กล่อง Text Message</h2>
+            <p>ส่วนนี้จะปรากฏหลังจากบันทึกข้อมูลสำเร็จ แล้วกดปุ่มสร้างข้อความส่งไลน์จาก pop-up เท่านั้น</p>
+          </div>
+          <div class="badge green">แสดงเมื่อสั่งสร้าง</div>
+        </div>
+        <div class="preview"><button class="copy-badge" onclick="handleCopyBadge(this)">คัดลอก</button><span id="individualMessageText"></span></div>
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn ghost" onclick="goHomeIndividual()">🏠 Home</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-team">
+      <div class="card">
+        <div class="section-head">
+          <div>
+            <h2>สรุปยอดรายทีม</h2>
+            <p>เมนูนี้ยังแสดงได้ตั้งแต่หน้าแรก และเหมาะสำหรับหัวหน้าทีมหรือทุกคนที่ต้องการรวมยอดของทีมเพื่อส่งเข้ากลุ่ม</p>
+          </div>
+          <div class="badge blue">เมนูที่ 2</div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>วันที่</label>
+            <input type="text" id="teamDate" readonly />
+          </div>
+          <div class="field">
+            <label>รอบเวลาที่แสดงในข้อความ</label>
+            <select id="teamRoundSelect"></select>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-top:12px; align-items:end;">
+          <div class="field">
+            <label>ทีม</label>
+            <select id="teamSelect"></select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn primary" onclick="lookupTeamData()">ค้นหาผลงานทีมวันนี้</button>
+          </div>
+        </div>
+        <div id="teamLookupError" class="error-text hidden"></div>
+        <div id="teamMetrics" class="mini-metrics hidden"></div>
+      </div>
+
+      <div id="teamReviewCard" class="card hidden">
+        <div class="section-head">
+          <div>
+            <h2>รีวิวข้อมูลทีมก่อนดำเนินการ</h2>
+            <p>หน้ารีวิวทีมจะมี 2 ปุ่มคือ บันทึกข้อมูลทีม และ ยกเลิก โดยถ้ากดยกเลิกจะกลับหน้าแรกของระบบ</p>
+          </div>
+          <div class="badge orange">Review</div>
+        </div>
+        <div class="summary-row" style="background:#fffaf3; border-style:dashed; margin-bottom:12px;">
+          <strong>บันทึกล่าสุด</strong>
+          <span id="teamLastSavedText">ยังไม่เคยบันทึกวันนี้</span>
+        </div>
+        <div id="teamMemberList"></div>
+        <div id="teamReviewSummary" class="summary-review"></div>
+        <div class="inline-actions" style="margin-top:12px;">
+          <button class="btn primary" onclick="saveTeamSummary()">บันทึกข้อมูลทีม</button>
+          <button class="btn secondary" onclick="cancelTeamReview()">ยกเลิก</button>
+        </div>
+      </div>
+
+      <div id="teamMessageCard" class="card hidden">
+        <div class="section-head">
+          <div>
+            <h2>กล่อง Text Message สรุปทีม</h2>
+            <p>กล่องนี้จะขึ้นต่อเมื่อบันทึกข้อมูลทีมสำเร็จ แล้วกดปุ่มสร้างข้อความส่งไลน์จาก pop-up เท่านั้น</p>
+          </div>
+          <div class="badge green">สร้างแล้วจึงแสดง</div>
+        </div>
+        <div class="preview"><button class="copy-badge" onclick="handleCopyBadge(this)">คัดลอก</button><span id="teamMessageText"></span></div>
+        <div class="actions" style="margin-top:10px;">
+          <button class="btn ghost" onclick="goHomeTeam()">🏠 Home</button>
+        </div>
+      </div>
+
+      <div id="teamEmptyState" class="empty-state">
+        เลือกทีมแล้วกดค้นหาผลงานวันนี้ ระบบจะดึงยอดล่าสุดของแต่ละคนในทีมขึ้นมาให้ตรวจสอบก่อนบันทึกจริง
+      </div>
+    </section>
+  </div>
+
+  <div class="save-overlay" id="saveOverlay">
+    <div class="save-modal">
+      <h3 id="saveModalTitle">กำลังบันทึกข้อมูล</h3>
+      <p id="saveModalText">ระบบกำลังจัดเก็บข้อมูล กรุณารอสักครู่</p>
+      <div class="progress-shell"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="progress-value" id="progressValue">0%</div>
+      <div id="saveModalActions" class="post-save-actions hidden">
+        <button class="btn soft-success" onclick="closeSaveOverlayToReview()">เสร็จสิ้น</button>
+        <button class="btn primary" onclick="openMessageFromOverlay()">สร้างข้อความส่งไลน์</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="notice-overlay" id="noticeOverlay">
+    <div class="notice-modal">
+      <h3 id="noticeTitle">กรุณาตรวจสอบข้อมูล</h3>
+      <p id="noticeText">กรุณาตรวจสอบข้อมูลที่จำเป็นก่อนดำเนินการต่อ</p>
+      <button class="btn primary" onclick="hideNoticeModal()">ตกลง</button>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxrNgcKtqyUpeXiGLzq_FPrHGzlgBlKUZ05DwS6OCLxmMcYjVozUJCNfaMIFWWRzp2_QQ/exec';
+    const state = {
+      activeTab: 'individual',
+      bootstrap: { rounds: ['12.00','14.00','16.00','18.00','19.00'], teams: [] },
+      individual: {
+        employee: null,
+        latest: null,
+        draft: null,
+        review: null,
+        message: '',
+        latestSavedText: 'ยังไม่เคยบันทึกวันนี้'
+      },
+      team: {
+        review: null,
+        message: '',
+        latestSavedText: 'ยังไม่เคยบันทึกวันนี้'
+      },
+      pendingOverlayTarget: null
+    };
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
+    function initApp() {
+      const today = getTodayThaiDisplay();
+      document.getElementById('today-pill').textContent = today;
+      document.getElementById('indDate').value = today;
+      document.getElementById('teamDate').value = today;
+      addCustomerCard();
+      loadBootstrap();
+    }
+
+    function getTodayISO() {
+      const d = new Date();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return d.getFullYear() + '-' + m + '-' + day;
+    }
+
+    function getTodayThaiDisplay() {
+      const d = new Date();
+      return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + (d.getFullYear() + 543);
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '').replace(/[&<>"]/g, function(ch) {
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[ch];
+      });
+    }
+
+    function showTab(tab) {
+      state.activeTab = tab;
+      document.querySelectorAll('.tab').forEach((el) => el.classList.toggle('active', el.dataset.tab === tab));
+      document.querySelectorAll('.screen').forEach((el) => el.classList.toggle('active', el.id === 'screen-' + tab));
+    }
+
+    function jsonpRequest(params) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        params.callback = callbackName;
+        const url = new URL(SCRIPT_URL);
+        Object.keys(params).forEach((key) => url.searchParams.set(key, params[key]));
+        const script = document.createElement('script');
+        let timeout;
+        window[callbackName] = function(data) {
+          clearTimeout(timeout);
+          delete window[callbackName];
+          script.remove();
+          resolve(data);
+        };
+        script.onerror = function() {
+          clearTimeout(timeout);
+          delete window[callbackName];
+          script.remove();
+          reject(new Error('ไม่สามารถเชื่อมต่อ Web App ได้'));
+        };
+        timeout = setTimeout(function() {
+          delete window[callbackName];
+          script.remove();
+          reject(new Error('หมดเวลารอการตอบกลับจาก Web App'));
+        }, 25000);
+        script.src = url.toString();
+        document.body.appendChild(script);
+      });
+    }
+
+    async function loadBootstrap() {
+      try {
+        if (!SCRIPT_URL || SCRIPT_URL.indexOf('PASTE_YOUR') !== -1) throw new Error('ยังไม่ได้ใส่ URL ของ Web App ในไฟล์ HTML');
+        const res = await jsonpRequest({ action: 'bootstrap' });
+        if (!res.ok) throw new Error(res.error || 'โหลดข้อมูลเริ่มต้นไม่สำเร็จ');
+        state.bootstrap = res.data;
+        fillSelectOptions('roundTimeSelect', state.bootstrap.rounds);
+        fillSelectOptions('teamRoundSelect', state.bootstrap.rounds);
+        fillSelectOptions('teamTodaySelect', state.bootstrap.teams.map(t => t.team_name));
+        fillSelectOptions('teamSelect', state.bootstrap.teams.map(t => t.team_name));
+      } catch (err) {
+        document.getElementById('employeeLookupError').classList.remove('hidden');
+        document.getElementById('employeeLookupError').textContent = err.message;
+      }
+    }
+
+    function fillSelectOptions(id, values) {
+      const select = document.getElementById(id);
+      select.innerHTML = values.map(v => '<option value="' + escapeHtml(v) + '">' + escapeHtml(v) + '</option>').join('');
+    }
+
+    function addCustomerCard(data) {
+      const wrap = document.getElementById('customerCardsWrap');
+      const index = wrap.children.length + 1;
+      const card = document.createElement('div');
+      card.className = 'customer-card';
+      card.innerHTML = `
+        <div class="customer-top">
+          <div class="customer-index">ลูกค้าคนที่ ${index}</div>
+          <button class="btn soft-danger" style="padding:10px 12px; font-size:12px;" onclick="removeCustomerCard(this)">ลบรายการ</button>
+        </div>
+        <div class="field">
+          <label>ชื่อลูกค้า</label>
+          <input type="text" class="customer-name" placeholder="ระบุชื่อย่อหรือชื่อที่ใช้ส่งยอด" value="${escapeHtml(data?.customer_name || '')}" />
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>ประเภทลูกค้า</label>
+            <select class="customer-type">
+              <option value="ใหม่" ${data?.customer_type === 'ใหม่' ? 'selected' : ''}>ใหม่</option>
+              <option value="เก่า" ${data?.customer_type === 'เก่า' ? 'selected' : ''}>เก่า</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>สถานะ</label>
+            <select class="customer-status">
+              ${['Approve','Reject','Pending','รอเอกสาร'].map(v => `<option value="${v}" ${data?.status===v?'selected':''}>${v}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field"><label>CR (จำนวนใบ)</label><input type="number" class="customer-cr" min="0" value="${data?.cr_count ?? 0}" /></div>
+          <div class="field"><label>YC (จำนวนใบ)</label><input type="number" class="customer-yc" min="0" value="${data?.yc_count ?? 0}" /></div>
+        </div>
+        <div class="field">
+          <label>หมายเหตุ / ติดตามเอกสาร</label>
+          <textarea class="customer-note" placeholder="เช่น รอเอกสารเพิ่ม / รอตรวจคุณสมบัติ / นัดเซ็นเอกสาร">${escapeHtml(data?.note || '')}</textarea>
+        </div>`;
+      wrap.appendChild(card);
+      refreshCustomerIndexes();
+    }
+
+    function removeCustomerCard(btn) {
+      btn.closest('.customer-card').remove();
+      refreshCustomerIndexes();
+    }
+
+    function refreshCustomerIndexes() {
+      [...document.querySelectorAll('#customerCardsWrap .customer-card')].forEach((card, i) => {
+        card.querySelector('.customer-index').textContent = 'ลูกค้าคนที่ ' + (i + 1);
+      });
+    }
+
+    function toggleNoCustomer() {
+      const checked = document.getElementById('noCustomerCheckbox').checked;
+      const wrap = document.getElementById('customerCardsWrap');
+      wrap.classList.toggle('hidden', checked);
+    }
+
+    function resetCustomerCards(customers) {
+      const wrap = document.getElementById('customerCardsWrap');
+      wrap.innerHTML = '';
+      if (customers && customers.length) {
+        customers.forEach(c => addCustomerCard(c));
+      } else {
+        addCustomerCard();
+      }
+    }
+
+    async function lookupEmployee() {
+      const employeeId = document.getElementById('employeeIdInput').value.trim();
+      const errorBox = document.getElementById('employeeLookupError');
+      errorBox.classList.add('hidden');
+      if (!employeeId) {
+        errorBox.textContent = 'กรุณากรอกรหัสพนักงาน';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+      try {
+        const res = await jsonpRequest({ action: 'lookupEmployee', employee_id: employeeId, work_date: getTodayISO() });
+        if (!res.ok) throw new Error(res.error || 'ตรวจสอบข้อมูลไม่สำเร็จ');
+        state.individual.employee = res.data.employee;
+        state.individual.latest = res.data.latest || null;
+        state.individual.latestSavedText = res.data.latest_saved_text || 'ยังไม่เคยบันทึกวันนี้';
+        renderEmployeeSummary(res.data);
+        hydrateIndividualForm(res.data);
+      } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('hidden');
+      }
+    }
+
+    function renderEmployeeSummary(data) {
+      const box = document.getElementById('employeeSummary');
+      const badge = data.latest ? '<div class="badge green">พร้อมกรอกยอด</div>' : '<div class="badge orange">เริ่มกรอกใหม่</div>';
+      const text = data.latest
+        ? 'พบข้อมูลล่าสุดของวันนี้แล้ว ระบบพร้อมเปิดฟอร์มกรอกยอดให้แก้ไขต่อ และจะอ้างอิงสาขาจากทีมอัตโนมัติ'
+        : 'วันนี้ยังไม่เริ่มส่งยอด ระบบพร้อมเปิดฟอร์มให้กรอกผลงานใหม่';
+      box.innerHTML = `<div><strong>${escapeHtml(data.employee.nickname)} [${escapeHtml(data.employee.employee_id)}] • ทีม ${escapeHtml(data.latest?.team_name || data.employee.default_team || '-')}</strong><span>${text}</span></div>${badge}`;
+      box.classList.add('show');
+      document.getElementById('individualBeforeLookupHint').classList.add('hidden');
+      document.getElementById('individualFormCard').classList.remove('hidden');
+      document.getElementById('individualReviewCard').classList.add('hidden');
+      document.getElementById('individualMessageCard').classList.add('hidden');
+      document.getElementById('individualFormLastSavedText').textContent = state.individual.latestSavedText;
+    }
+
+    function hydrateIndividualForm(data) {
+      const latest = data.latest;
+      document.getElementById('roundTimeSelect').value = latest?.round_time || state.bootstrap.rounds[0] || '12.00';
+      document.getElementById('teamTodaySelect').value = latest?.team_name || data.employee.default_team || (state.bootstrap.teams[0] && state.bootstrap.teams[0].team_name) || '';
+      document.getElementById('insurancePolicyCount').value = latest?.insurance_policy_count ?? 0;
+      document.getElementById('insurancePremium').value = latest?.insurance_premium ?? 0;
+      document.getElementById('noCustomerCheckbox').checked = !!latest?.no_customer;
+      resetCustomerCards(latest?.customers || []);
+      toggleNoCustomer();
+      document.getElementById('individualFormLastSavedText').textContent = state.individual.latestSavedText;
+      document.getElementById('individualFormError').classList.add('hidden');
+    }
+
+    function collectIndividualDraft() {
+      const customers = document.getElementById('noCustomerCheckbox').checked ? [] : [...document.querySelectorAll('#customerCardsWrap .customer-card')].map(card => ({
+        customer_name: card.querySelector('.customer-name').value.trim(),
+        customer_type: card.querySelector('.customer-type').value,
+        cr_count: Number(card.querySelector('.customer-cr').value || 0),
+        yc_count: Number(card.querySelector('.customer-yc').value || 0),
+        status: card.querySelector('.customer-status').value,
+        note: card.querySelector('.customer-note').value.trim()
+      })).filter(c => c.customer_name || c.cr_count || c.yc_count || c.note || c.status);
+
+      return {
+        work_date: getTodayISO(),
+        work_date_display: document.getElementById('indDate').value,
+        employee_id: state.individual.employee.employee_id,
+        employee_name: state.individual.employee.employee_name,
+        nickname: state.individual.employee.nickname,
+        round_time: document.getElementById('roundTimeSelect').value,
+        team_name: document.getElementById('teamTodaySelect').value,
+        no_customer: document.getElementById('noCustomerCheckbox').checked,
+        customers,
+        insurance_policy_count: Number(document.getElementById('insurancePolicyCount').value || 0),
+        insurance_premium: Number(document.getElementById('insurancePremium').value || 0)
+      };
+    }
+
+    function processIndividual() {
+      if (!state.individual.employee) return;
+      const errorBox = document.getElementById('individualFormError');
+      errorBox.classList.add('hidden');
+      const roundTime = document.getElementById('roundTimeSelect').value;
+      if (!roundTime) {
+        showNoticeModal('กรุณาระบุรอบเวลา', 'ก่อนกดประมวลผล กรุณาเลือกรอบเวลาให้เรียบร้อยก่อน');
+        document.getElementById('roundTimeSelect').focus();
+        return;
+      }
+      const draft = collectIndividualDraft();
+      if (!draft.no_customer && draft.customers.length === 0) {
+        errorBox.textContent = 'กรุณากรอกข้อมูลลูกค้าอย่างน้อย 1 รายการ หรือเลือกว่ายังไม่มียอดลูกค้าสมัครบัตร';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+      state.individual.draft = draft;
+      state.individual.review = buildIndividualReview(draft);
+      state.individual.message = buildIndividualMessage(draft, state.individual.review);
+      renderIndividualReview();
+    }
+
+    function buildIndividualReview(draft) {
+      const totalCustomers = draft.customers.length;
+      const newCount = draft.customers.filter(c => c.customer_type === 'ใหม่').length;
+      const oldCount = draft.customers.filter(c => c.customer_type === 'เก่า').length;
+      const totalCr = draft.customers.reduce((s, c) => s + Number(c.cr_count || 0), 0);
+      const totalYc = draft.customers.reduce((s, c) => s + Number(c.yc_count || 0), 0);
+      const approveCustomers = draft.customers.filter(c => c.status === 'Approve');
+      const approveNew = approveCustomers.filter(c => c.customer_type === 'ใหม่').length;
+      const approveOld = approveCustomers.filter(c => c.customer_type === 'เก่า').length;
+      const approveCr = approveCustomers.reduce((s, c) => s + Number(c.cr_count || 0), 0);
+      const approveYc = approveCustomers.reduce((s, c) => s + Number(c.yc_count || 0), 0);
+      const rejectCount = draft.customers.filter(c => c.status === 'Reject').reduce((s, c) => s + Number(c.cr_count || 0) + Number(c.yc_count || 0), 0);
+      return { totalCustomers, newCount, oldCount, totalCr, totalYc, approveNew, approveOld, approveCr, approveYc, rejectCount };
+    }
+
+    function renderIndividualReview() {
+      document.getElementById('individualLastSavedText').textContent = state.individual.latestSavedText;
+      const r = state.individual.review;
+      const d = state.individual.draft;
+      const wrap = document.getElementById('individualReviewSummary');
+      wrap.innerHTML = `
+        <div class="summary-row"><strong>ข้อมูลพนักงาน</strong>🆔 ${escapeHtml(d.nickname)} [${escapeHtml(d.employee_id)}] • ทีม ${escapeHtml(d.team_name)} • รอบ ${escapeHtml(d.round_time)}</div>
+        <div class="summary-row"><strong>สรุปลูกค้า</strong>ลูกค้า ${r.totalCustomers} คน | ใหม่ ${r.newCount} | เก่า ${r.oldCount} | CR ${r.totalCr} | YC ${r.totalYc}</div>
+        <div class="summary-row"><strong>สรุปประกัน</strong>${d.insurance_policy_count} กรมฯ | เบี้ยรวม ${formatNumber(d.insurance_premium)} บาท</div>`;
+      document.getElementById('individualReviewCard').classList.remove('hidden');
+      document.getElementById('individualReviewCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function cancelIndividualReview() {
+      document.getElementById('individualReviewCard').classList.add('hidden');
+      document.getElementById('individualMessageCard').classList.add('hidden');
+      document.getElementById('individualFormLastSavedText').textContent = state.individual.latestSavedText;
+      goHomeIndividual();
+    }
+
+    async function saveIndividual() {
+      if (!state.individual.draft || !state.individual.review) return;
+      openSaveOverlay('กำลังบันทึกข้อมูล', 'ระบบกำลังจัดเก็บข้อมูลผลงาน ตรวจสอบทีม และบันทึกลงฐานข้อมูล กรุณารอสักครู่', 'individual');
+      try {
+        simulateProgress(78);
+        const res = await jsonpRequest({ action: 'saveIndividual', payload: JSON.stringify(state.individual.draft) });
+        if (!res.ok) throw new Error(res.error || 'บันทึกข้อมูลไม่สำเร็จ');
+        state.individual.latestSavedText = res.data.latest_saved_text || getCurrentTimeDisplay();
+        state.individual.latest = res.data.latest || null;
+        document.getElementById('individualLastSavedText').textContent = state.individual.latestSavedText;
+        document.getElementById('individualFormLastSavedText').textContent = state.individual.latestSavedText;
+        simulateProgress(100, true);
+      } catch (err) {
+        closeSaveOverlay();
+        alert(err.message);
+      }
+    }
+
+    function buildIndividualMessage(draft, review) {
+      const lines = [];
+      lines.push('🚩 รายงานยอด รายบุคคล : ');
+      lines.push(`🆔 ${draft.nickname} [${draft.employee_id}] ทีม ${draft.team_name}`);
+      lines.push(`📅 ข้อมูลวันที่: ${draft.work_date_display.replace(/\//g, '/')} รอบ ${draft.round_time}`);
+      lines.push('—————————');
+      lines.push('');
+      if (draft.no_customer || draft.customers.length === 0) {
+        lines.push('🚫 ยังไม่ได้ลูกค้า');
+        lines.push('');
+      } else {
+        draft.customers.forEach((c, i) => {
+          lines.push(`${i + 1}. ${c.customer_name} (${c.customer_type})`);
+          const cards = [];
+          if (c.cr_count) cards.push(`CR ${c.cr_count}`);
+          if (c.yc_count) cards.push(`YC ${c.yc_count}`);
+          lines.push(`[${cards.join(' / ') || 'CR 0'}] ${mapStatusText(c.status)}`);
+          if (c.note) lines.push(`หมายเหตุ: ${c.note}`);
+          lines.push('');
+        });
+      }
+      lines.push(`🛡️ ประกัน: ${draft.insurance_policy_count} กรมฯ (${formatNumber(draft.insurance_premium)}.-)`);
+      lines.push('—————————');
+      lines.push('#สรุปผลงานรายบุคคล');
+      lines.push(`จำนวนลูกค้า ${review.totalCustomers} คน (ใหม่ ${review.newCount} / เก่า ${review.oldCount})`);
+      lines.push(`CR ${review.totalCr} ใบ YC ${review.totalYc} ใบ`);
+      lines.push('✅ Approve:');
+      lines.push(`ลูกค้าใหม่ ${review.approveNew} (คน) / ลูกค้าเก่า ${review.approveOld} (คน)`);
+      lines.push(`✅ CR ${review.approveCr} (ใบ) / YC ${review.approveYc} (ใบ)`);
+      lines.push(`❌ Reject: ${review.rejectCount} (ใบ)`);
+      lines.push(`🛡️ ยอดขายประกัน: ${draft.insurance_policy_count} กรมฯ`);
+      lines.push(`💰 เบี้ยประกันรวม: ${formatNumber(draft.insurance_premium)} บาท`);
+      lines.push('—————————');
+      return lines.join('\n');
+    }
+
+    async function lookupTeamData() {
+      document.getElementById('teamLookupError').classList.add('hidden');
+      document.getElementById('teamReviewCard').classList.add('hidden');
+      document.getElementById('teamMessageCard').classList.add('hidden');
+      try {
+        const teamName = document.getElementById('teamSelect').value;
+        const res = await jsonpRequest({ action: 'teamReview', team_name: teamName, work_date: getTodayISO(), round_time: document.getElementById('teamRoundSelect').value });
+        if (!res.ok) throw new Error(res.error || 'ค้นหาผลงานทีมไม่สำเร็จ');
+        state.team.review = res.data;
+        state.team.message = buildTeamMessage(res.data);
+        state.team.latestSavedText = res.data.latest_saved_text || 'ยังไม่เคยบันทึกวันนี้';
+        renderTeamReview();
+      } catch (err) {
+        document.getElementById('teamLookupError').textContent = err.message;
+        document.getElementById('teamLookupError').classList.remove('hidden');
+      }
+    }
+
+    function renderTeamReview() {
+      const data = state.team.review;
+      document.getElementById('teamLastSavedText').textContent = state.team.latestSavedText;
+      document.getElementById('teamMetrics').classList.remove('hidden');
+      document.getElementById('teamMetrics').innerHTML = `
+        <div class="metric"><span>จำนวนพนักงานในทีมนี้</span><strong>${data.member_count} คน</strong></div>
+        <div class="metric"><span>จำนวนลูกค้ารวม</span><strong>${data.summary.totalCustomers} คน</strong></div>
+        <div class="metric"><span>CR รวม</span><strong>${data.summary.totalCr} ใบ</strong></div>
+        <div class="metric"><span>YC รวม</span><strong>${data.summary.totalYc} ใบ</strong></div>`;
+      document.getElementById('teamMemberList').innerHTML = data.members.map(member => `
+        <div class="team-person" style="margin-top:10px;">
+          <h3>🆔 ${escapeHtml(member.nickname)} [${escapeHtml(member.employee_id)}]</h3>
+          ${member.no_customer || member.customers.length === 0 ? '<p>🚫 ยังไม่ได้ลูกค้า</p>' : member.customers.map((c,i)=>`<p>${i+1}. ${escapeHtml(c.customer_name)} (${escapeHtml(c.customer_type)}) • [${c.cr_count ? 'CR '+c.cr_count : ''}${c.cr_count && c.yc_count ? ' / ' : ''}${c.yc_count ? 'YC '+c.yc_count : ''}] ${escapeHtml(mapStatusText(c.status))}</p>`).join('')}
+          <p>🛡️ ประกัน: ${member.insurance_policy_count} กรมฯ (${formatNumber(member.insurance_premium)}.-)</p>
+        </div>`).join('');
+      const s = data.summary;
+      document.getElementById('teamReviewSummary').innerHTML = `
+        <div class="summary-row"><strong>สรุปทีม</strong>ลูกค้ารวม ${s.totalCustomers} คน | ใหม่ ${s.newCount} | เก่า ${s.oldCount} | CR ${s.totalCr} | YC ${s.totalYc}</div>
+        <div class="summary-row"><strong>สถานะผลงาน</strong>Approve ${s.approveCr + s.approveYc} | Reject ${s.rejectCount} | ประกัน ${s.insurancePolicyCount} กรมฯ | เบี้ยรวม ${formatNumber(s.insurancePremium)} บาท</div>`;
+      document.getElementById('teamReviewCard').classList.remove('hidden');
+      document.getElementById('teamReviewCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function buildTeamMessage(data) {
+      const lines = [];
+      lines.push(`🚩 รายงานสรุปภาพรวมทีม: ${data.team_name}`);
+      lines.push(`📅 ข้อมูลวันที่: ${data.work_date_display} รอบ ${data.round_time}`);
+      lines.push('—————————');
+      data.members.forEach(member => {
+        lines.push('');
+        lines.push(`🆔 พนักงาน: ${member.nickname} [${member.employee_id}]`);
+        if (member.no_customer || member.customers.length === 0) {
+          lines.push('🚫 ยังไม่ได้ลูกค้า');
+        } else {
+          member.customers.forEach((c, i) => {
+            lines.push(`${i + 1}. ${c.customer_name} (${c.customer_type})`);
+            const cards = [];
+            if (c.cr_count) cards.push(`CR ${c.cr_count}`);
+            if (c.yc_count) cards.push(`YC ${c.yc_count}`);
+            lines.push(`[${cards.join(' / ') || 'CR 0'}] ${mapStatusText(c.status)}`);
+          });
+        }
+        lines.push(`🛡️ ประกัน: ${member.insurance_policy_count} กรมฯ (${formatNumber(member.insurance_premium)}.-)`);
+        lines.push('');
+        lines.push('—————————');
+      });
+      const s = data.summary;
+      lines.push('#สรุปผลงานรายทีม');
+      lines.push(`จำนวนลูกค้า ${s.totalCustomers} คน (ใหม่ ${s.newCount} / เก่า ${s.oldCount})`);
+      lines.push(`CR ${s.totalCr} ใบ YC ${s.totalYc} ใบ`);
+      lines.push('✅ Approve:');
+      lines.push(`ลูกค้าใหม่ ${s.approveNew} (คน) / ลูกค้าเก่า ${s.approveOld} (คน)`);
+      lines.push(`✅ CR ${s.approveCr} (ใบ) / YC ${s.approveYc} (ใบ)`);
+      lines.push(`❌ Reject: ${s.rejectCount} (ใบ)`);
+      lines.push(`🛡️ ยอดขายประกัน: ${s.insurancePolicyCount} กรมฯ`);
+      lines.push(`💰 เบี้ยประกันรวม: ${formatNumber(s.insurancePremium)} บาท`);
+      lines.push('—————————');
+      return lines.join('\n');
+    }
+
+    async function saveTeamSummary() {
+      if (!state.team.review) return;
+      openSaveOverlay('กำลังบันทึกข้อมูลทีม', 'ระบบกำลังรวมยอดของทีม ตรวจสอบข้อมูลล่าสุด และบันทึกลงฐานข้อมูล กรุณารอสักครู่', 'team');
+      try {
+        simulateProgress(78);
+        const res = await jsonpRequest({ action: 'saveTeamSummary', payload: JSON.stringify(state.team.review) });
+        if (!res.ok) throw new Error(res.error || 'บันทึกข้อมูลทีมไม่สำเร็จ');
+        state.team.latestSavedText = res.data.latest_saved_text || getCurrentTimeDisplay();
+        document.getElementById('teamLastSavedText').textContent = state.team.latestSavedText;
+        simulateProgress(100, true);
+      } catch (err) {
+        closeSaveOverlay();
+        alert(err.message);
+      }
+    }
+
+    function cancelTeamReview() {
+      document.getElementById('teamReviewCard').classList.add('hidden');
+      document.getElementById('teamMessageCard').classList.add('hidden');
+      goHomeTeam();
+    }
+
+    function openSaveOverlay(title, text, target) {
+      state.pendingOverlayTarget = target;
+      document.getElementById('saveModalTitle').textContent = title;
+      document.getElementById('saveModalText').textContent = text;
+      document.getElementById('progressBar').style.width = '6%';
+      document.getElementById('progressValue').textContent = '0%';
+      document.getElementById('saveModalActions').classList.add('hidden');
+      document.getElementById('saveOverlay').classList.add('show');
+    }
+
+    function simulateProgress(percent, done) {
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('progressValue').textContent = percent + '%';
+      if (done) document.getElementById('saveModalActions').classList.remove('hidden');
+    }
+
+    function closeSaveOverlay() {
+      document.getElementById('saveOverlay').classList.remove('show');
+      document.getElementById('saveModalActions').classList.add('hidden');
+    }
+
+    function closeSaveOverlayToReview() {
+      closeSaveOverlay();
+    }
+
+    function openMessageFromOverlay() {
+      closeSaveOverlay();
+      if (state.pendingOverlayTarget === 'individual') {
+        document.getElementById('individualMessageText').textContent = state.individual.message;
+        document.getElementById('individualMessageCard').classList.remove('hidden');
+        document.getElementById('individualMessageCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (state.pendingOverlayTarget === 'team') {
+        document.getElementById('teamMessageText').textContent = state.team.message;
+        document.getElementById('teamMessageCard').classList.remove('hidden');
+        document.getElementById('teamMessageCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function goHomeIndividual() {
+      document.getElementById('employeeIdInput').value = '';
+      document.getElementById('employeeSummary').classList.remove('show');
+      document.getElementById('individualBeforeLookupHint').classList.remove('hidden');
+      document.getElementById('individualFormCard').classList.add('hidden');
+      document.getElementById('individualReviewCard').classList.add('hidden');
+      document.getElementById('individualMessageCard').classList.add('hidden');
+      document.getElementById('individualFormLastSavedText').textContent = state.individual.latestSavedText;
+      document.getElementById('employeeLookupError').classList.add('hidden');
+      document.getElementById('individualFormError').classList.add('hidden');
+      state.individual = { employee:null, latest:null, draft:null, review:null, message:'', latestSavedText:'ยังไม่เคยบันทึกวันนี้' };
+      resetCustomerCards();
+      document.getElementById('noCustomerCheckbox').checked = false;
+      toggleNoCustomer();
+      document.getElementById('insurancePolicyCount').value = 0;
+      document.getElementById('insurancePremium').value = 0;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goHomeTeam() {
+      document.getElementById('teamReviewCard').classList.add('hidden');
+      document.getElementById('teamMessageCard').classList.add('hidden');
+      document.getElementById('teamLookupError').classList.add('hidden');
+      document.getElementById('teamMetrics').classList.add('hidden');
+      document.getElementById('teamMemberList').innerHTML = '';
+      document.getElementById('teamReviewSummary').innerHTML = '';
+      document.getElementById('teamEmptyState').classList.remove('hidden');
+      state.team = { review:null, message:'', latestSavedText:'ยังไม่เคยบันทึกวันนี้' };
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function formatNumber(n) {
+      return Number(n || 0).toLocaleString('th-TH');
+    }
+
+    function mapStatusText(status) {
+      if (status === 'Approve') return '✅ Approve';
+      if (status === 'Reject') return '❌ Reject';
+      if (status === 'Pending') return '🅿️ Pending';
+      if (status === 'รอเอกสาร') return '📄 รอเอกสาร';
+      return status || '-';
+    }
+
+    function getCurrentTimeDisplay() {
+      const d = new Date();
+      return getTodayThaiDisplay() + ' • ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ' น.';
+    }
+
+    function showNoticeModal(title, text) {
+      document.getElementById('noticeTitle').textContent = title || 'กรุณาตรวจสอบข้อมูล';
+      document.getElementById('noticeText').textContent = text || '';
+      document.getElementById('noticeOverlay').classList.add('show');
+    }
+
+    function hideNoticeModal() {
+      document.getElementById('noticeOverlay').classList.remove('show');
+    }
+
+    function handleCopyBadge(button) {
+      const preview = button.parentElement;
+      const textToCopy = preview.innerText.replace(/^คัดลอก\s*/, '').trim();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(function(){ animateCopyState(button); });
+      } else {
+        const temp = document.createElement('textarea');
+        temp.value = textToCopy;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        animateCopyState(button);
+      }
+    }
+
+    function animateCopyState(button) {
+      const originalText = button.dataset.originalText || button.textContent;
+      button.dataset.originalText = originalText;
+      button.classList.add('copied');
+      button.textContent = 'คัดลอกแล้ว ✓';
+      clearTimeout(button._copyTimer);
+      button._copyTimer = setTimeout(function () {
+        button.classList.remove('copied');
+        button.textContent = originalText;
+      }, 1800);
+    }
+  </script>
+</body>
+</html>
