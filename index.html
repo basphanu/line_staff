@@ -127,6 +127,13 @@
     .progress-bar { height:100%; width:6%; border-radius:999px; background:linear-gradient(90deg, #FFC570 0%, #547792 55%, #1A3263 100%); transition:width .35s ease; }
     .progress-value { font-size:24px; font-weight:800; color:var(--navy); margin-bottom:16px; }
     .post-save-actions { display:grid; gap:10px; margin-top:10px; }
+    .loading-overlay { position:fixed; inset:0; background:rgba(26,50,99,.34); display:none; align-items:center; justify-content:center; padding:20px; z-index:55; }
+    .loading-overlay.show { display:flex; }
+    .loading-modal { width:100%; max-width:320px; border-radius:24px; background:rgba(255,255,255,.98); border:1px solid rgba(255,255,255,.85); box-shadow:0 24px 60px rgba(26,50,99,.22); padding:22px 20px; text-align:center; }
+    .loading-modal h3 { margin:0 0 8px; font-size:18px; color:var(--navy); }
+    .loading-modal p { margin:0; font-size:13px; color:var(--muted); line-height:1.5; }
+    .loading-spinner { width:54px; height:54px; border-radius:50%; margin:0 auto 14px; border:5px solid rgba(84,119,146,.18); border-top-color:var(--navy); border-right-color:var(--gold); animation:spin 0.9s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
     .notice-overlay { position:fixed; inset:0; background:rgba(26,50,99,.34); display:none; align-items:center; justify-content:center; padding:20px; z-index:60; }
     .notice-overlay.show { display:flex; }
     .notice-modal { width:100%; max-width:320px; border-radius:24px; background:rgba(255,255,255,.98); border:1px solid rgba(255,255,255,.85); box-shadow:0 24px 60px rgba(26,50,99,.22); padding:20px; text-align:center; }
@@ -372,6 +379,14 @@
     </div>
   </div>
 
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-modal">
+      <div class="loading-spinner"></div>
+      <h3 id="loadingTitle">กำลังโหลดข้อมูล</h3>
+      <p id="loadingText">ระบบกำลังดึงข้อมูลจาก API กรุณารอสักครู่</p>
+    </div>
+  </div>
+
   <div class="notice-overlay" id="noticeOverlay">
     <div class="notice-modal">
       <h3 id="noticeTitle">กรุณาตรวจสอบข้อมูล</h3>
@@ -564,6 +579,7 @@
         errorBox.classList.remove('hidden');
         return;
       }
+      openLoadingModal('กำลังโหลดข้อมูลพนักงาน', 'ระบบกำลังตรวจสอบรหัสพนักงานและดึงข้อมูลล่าสุดของวันนี้');
       try {
         const res = await jsonpRequest({ action: 'lookupEmployee', employee_id: employeeId, work_date: getTodayISO() });
         if (!res.ok) throw new Error(res.error || 'ตรวจสอบข้อมูลไม่สำเร็จ');
@@ -575,6 +591,8 @@
       } catch (err) {
         errorBox.textContent = err.message;
         errorBox.classList.remove('hidden');
+      } finally {
+        closeLoadingModal();
       }
     }
 
@@ -743,20 +761,33 @@
     }
 
     async function lookupTeamData() {
-      document.getElementById('teamLookupError').classList.add('hidden');
+      const errorBox = document.getElementById('teamLookupError');
+      errorBox.classList.add('hidden');
       document.getElementById('teamReviewCard').classList.add('hidden');
       document.getElementById('teamMessageCard').classList.add('hidden');
+      document.getElementById('teamMetrics').classList.add('hidden');
+      document.getElementById('teamEmptyState').classList.add('hidden');
       try {
-        const teamName = document.getElementById('teamSelect').value;
-        const res = await jsonpRequest({ action: 'teamReview', team_name: teamName, work_date: getTodayISO(), round_time: document.getElementById('teamRoundSelect').value });
-        if (!res.ok) throw new Error(res.error || 'ค้นหาผลงานทีมไม่สำเร็จ');
+        openLoadingModal('กำลังโหลดข้อมูลทีม', 'ระบบกำลังรวมยอดล่าสุดของพนักงานในทีมที่เลือก กรุณารอสักครู่');
+        const payload = {
+          action: 'lookupTeamSummary',
+          work_date: getTodayISO(),
+          team_name: document.getElementById('teamSummarySelect').value,
+          round_time: document.getElementById('teamRoundSelect').value,
+          work_date_display: document.getElementById('teamDate').value
+        };
+        const res = await jsonpRequest(payload);
+        if (!res.ok) throw new Error(res.error || 'ค้นหาข้อมูลทีมไม่สำเร็จ');
         state.team.review = res.data;
         state.team.message = buildTeamMessage(res.data);
         state.team.latestSavedText = res.data.latest_saved_text || 'ยังไม่เคยบันทึกวันนี้';
-        renderTeamReview();
+        renderTeamReview(res.data);
       } catch (err) {
-        document.getElementById('teamLookupError').textContent = err.message;
-        document.getElementById('teamLookupError').classList.remove('hidden');
+        document.getElementById('teamEmptyState').classList.remove('hidden');
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('hidden');
+      } finally {
+        closeLoadingModal();
       }
     }
 
@@ -926,6 +957,16 @@
     function getCurrentTimeDisplay() {
       const d = new Date();
       return getTodayThaiDisplay() + ' • ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ' น.';
+    }
+
+    function openLoadingModal(title, text) {
+      document.getElementById('loadingTitle').textContent = title || 'กำลังโหลดข้อมูล';
+      document.getElementById('loadingText').textContent = text || 'ระบบกำลังดึงข้อมูลจาก API กรุณารอสักครู่';
+      document.getElementById('loadingOverlay').classList.add('show');
+    }
+
+    function closeLoadingModal() {
+      document.getElementById('loadingOverlay').classList.remove('show');
     }
 
     function showNoticeModal(title, text) {
