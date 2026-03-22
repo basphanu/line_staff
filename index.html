@@ -770,9 +770,9 @@
       try {
         openLoadingModal('กำลังโหลดข้อมูลทีม', 'ระบบกำลังรวมยอดล่าสุดของพนักงานในทีมที่เลือก กรุณารอสักครู่');
         const payload = {
-          action: 'lookupTeamSummary',
+          action: 'teamReview',
           work_date: getTodayISO(),
-          team_name: document.getElementById('teamSummarySelect').value,
+          team_name: document.getElementById('teamSelect').value,
           round_time: document.getElementById('teamRoundSelect').value,
           work_date_display: document.getElementById('teamDate').value
         };
